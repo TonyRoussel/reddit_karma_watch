@@ -1,17 +1,15 @@
-import praw
 import argparse
 import sys
 import time
-import RPi.GPIO as GPIO
+#import RPi.GPIO as GPIO
+import json
+from urllib2 import urlopen
 
 def get_arg_user():
     argparser = argparse.ArgumentParser()
     argparser.add_argument("username")
     args = argparser.parse_args()
     return args.username
-
-def init_reddit(uagent, cachetime=1):
-    return praw.Reddit(user_agent=uagent, cache_timeout=cachetime)
 
 def init_gpio(gpio_list):
     GPIO.setmode(GPIO.BOARD)
@@ -56,13 +54,15 @@ def signal_comment_karma_shift(comment_karma_diff, gpio_plus, gpio_minus):
         comment_blink(comment_karma_diff, gpio_plus)
     return
 
-user_agent = "linux:Karma Watch:v0.0.1 (by /u/not_da_bot)"
+def get_user_about(username):
+    url = "https://www.reddit.com/user/%s/about.json" % username
+    response = urlopen(url)
+    return json.load(response)
 
 username = get_arg_user()
-r = init_reddit(user_agent, cachetime=1)
-user = r.get_redditor(username)
-link_karma = user.link_karma
-comment_karma = user.comment_karma
+about = get_user_about(username)
+link_karma = about[u'data'][u'link_karma']
+comment_karma = about[u'data'][u'comment_karma']
 
 gpio_plus = 40
 gpio_minus = 37
@@ -72,26 +72,17 @@ print "Karma watch start link : %d comment : %d" % (link_karma, comment_karma)
 
 try:
     init_gpio(gpio_list)
-    import pprint
     while 1:
-        pprint.pprint("dir(user)")
-        pprint.pprint(dir(user))
-        pprint.pprint("vars(user)")
-        pprint.pprint(vars(user))
-        pprint.pprint("dir(r)")
-        pprint.pprint(dir(r))
-        pprint.pprint("vars(r)")
-        pprint.pprint(vars(r))
-        exit(1)
-        tlink_karma = user.link_karma
-        tcomment_karma = user.comment_karma
+        time.sleep(5)
+        about = get_user_about(username)
+        tlink_karma = about[u'data']["link_karma"]
+        tcomment_karma = about[u'data']["comment_karma"]
         link_karma_diff = tlink_karma - link_karma
         comment_karma_diff = tcomment_karma - comment_karma
         signal_link_karma_shift(link_karma_diff, gpio_plus, gpio_minus)
         signal_comment_karma_shift(comment_karma_diff, gpio_plus, gpio_minus)
         link_karma = tlink_karma
         comment_karma = tcomment_karma
-        time.sleep(1)
 except KeyboardInterrupt:
     print >> sys.stderr, "\nKeyboard Interruption\n"
 except praw.errors.InvalidUserPass:

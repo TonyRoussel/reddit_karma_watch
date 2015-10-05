@@ -1,5 +1,6 @@
 import praw
 import argparse
+import sys
 import time
 import RPi.GPIO as GPIO
 
@@ -38,26 +39,28 @@ def comment_blink(n, pin):
     return
 
 def signal_link_karma_shift(link_karma_diff, gpio_plus, gpio_minus):
-    print "Link karma shift %d" % (link_karma_diff)
     if link_karma_diff < 0:
+        print "Link karma shift %d" % (link_karma_diff)
         link_blink(abs(link_karma_diff), gpio_minus)
     elif link_karma_diff > 0:
+        print "Link karma shift %d" % (link_karma_diff)
         link_blink(link_karma_diff, gpio_plus)
     return
 
 def signal_comment_karma_shift(comment_karma_diff, gpio_plus, gpio_minus):
-    print "Comment karma shift %d" % (comment_karma_diff)
     if comment_karma_diff < 0:
+        print "Comment karma shift %d" % (comment_karma_diff)
         comment_blink(abs(comment_karma_diff), gpio_minus)
     elif comment_karma_diff > 0:
+        print "Comment karma shift %d" % (comment_karma_diff)
         comment_blink(comment_karma_diff, gpio_plus)
     return
 
 user_agent = "linux:Karma Watch:v0.0.1 (by /u/not_da_bot)"
 
 username = get_arg_user()
-r = init_reddit(user_agent, cache_timeout=1)
-user = r.get_redditor(user)
+r = init_reddit(user_agent, cachetime=1)
+user = r.get_redditor(username)
 link_karma = user.link_karma
 comment_karma = user.comment_karma
 
@@ -69,7 +72,17 @@ print "Karma watch start link : %d comment : %d" % (link_karma, comment_karma)
 
 try:
     init_gpio(gpio_list)
+    import pprint
     while 1:
+        pprint.pprint("dir(user)")
+        pprint.pprint(dir(user))
+        pprint.pprint("vars(user)")
+        pprint.pprint(vars(user))
+        pprint.pprint("dir(r)")
+        pprint.pprint(dir(r))
+        pprint.pprint("vars(r)")
+        pprint.pprint(vars(r))
+        exit(1)
         tlink_karma = user.link_karma
         tcomment_karma = user.comment_karma
         link_karma_diff = tlink_karma - link_karma

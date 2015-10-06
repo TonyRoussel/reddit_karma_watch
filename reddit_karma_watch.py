@@ -1,9 +1,8 @@
 import argparse
 import sys
 import time
-#import RPi.GPIO as GPIO
-import json
-from urllib2 import urlopen
+import RPi.GPIO as GPIO
+import requests
 
 def get_arg_user():
     argparser = argparse.ArgumentParser()
@@ -55,9 +54,10 @@ def signal_comment_karma_shift(comment_karma_diff, gpio_plus, gpio_minus):
     return
 
 def get_user_about(username):
+    headers = {'User-Agent': 'linux:Reddit Karma Watch:v001 (by /u/not_da_bot)'}
     url = "https://www.reddit.com/user/%s/about.json" % username
-    response = urlopen(url)
-    return json.load(response)
+    resp = requests.get(url, headers=headers)
+    return resp.json()
 
 username = get_arg_user()
 about = get_user_about(username)
@@ -68,12 +68,14 @@ gpio_plus = 40
 gpio_minus = 37
 gpio_list = [gpio_plus, gpio_minus]
 
+cooldown_time = 10
+
 print "Karma watch start link : %d comment : %d" % (link_karma, comment_karma)
 
 try:
     init_gpio(gpio_list)
     while 1:
-        time.sleep(5)
+        time.sleep(cooldown_time)
         about = get_user_about(username)
         tlink_karma = about[u'data']["link_karma"]
         tcomment_karma = about[u'data']["comment_karma"]
